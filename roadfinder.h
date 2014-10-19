@@ -11,7 +11,7 @@ class RoadFinder : public QObject
 {
     Q_OBJECT
 public:
-    explicit RoadFinder(QString fileName, QObject *parent = 0);
+    explicit RoadFinder(QString fileName, bool useTypes, QObject *parent = 0);
 private:
     void readXML();
     void readNode();
@@ -26,6 +26,7 @@ private:
     QMap<QString, int> surfaceTypeCounts;
     QXmlStreamReader xml;
     QFile output;
+    bool useTypes;
 
 signals:
 

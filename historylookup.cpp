@@ -2,9 +2,10 @@
 #include <QFile>
 #include <QDebug>
 
-HistoryLookup::HistoryLookup(QObject *parent) :
+HistoryLookup::HistoryLookup(bool useTypes, QObject *parent) :
     QObject(parent)
 {
+    this->useTypes=useTypes;
     qDebug() << "HistoryLookup";
     currentroad=0;
     QString fileName = "/home/matt/hackuna/OSM/output";
@@ -56,15 +57,20 @@ void HistoryLookup::replyFinished(QNetworkReply* reply)
     parse(response);
     currentroad++;
     if (currentroad < roads.keys().count())
-        QTimer::singleShot(300, this, SLOT(makeRequest()));
+        QTimer::singleShot(500, this, SLOT(makeRequest()));
     else
-        qDebug() << "Job Finished." << roads.keys().count() << "roads inspected" << upgradedRoads.count() << "upgraded roads found.";
+    {
+        qDebug() << "Roads Upgraded:";
+        qDebug() << upgradedRoads;
+        qDebug() << "Job Finished." << roads.keys().count() << "roads inspected" << upgradedRoads.count() << "upgraded roads found in this region.";
+
+    }
 }
 
 
 void HistoryLookup::parse(QByteArray data)
 {
-    qDebug() << "Parsing Data" << data;
+    qDebug() << "Parsing Data";
     QBuffer buffer(&data);
     buffer.open(QBuffer::ReadOnly);
     xml.setDevice(&buffer);
@@ -114,18 +120,38 @@ void HistoryLookup::readWay()
         {
             QString key = xml.attributes().value("k").toString();
             QString value = xml.attributes().value("v").toString();
-            if (key == "surface" && value=="unpaved")
+            if (!useTypes)
             {
-                QString WayID = roads.keys().at(currentroad);
-                upgradedRoads.append(WayID);
-                qDebug() << "Upgraded way found";
+                if (key == "surface" && value=="unpaved")
+                {
+                    QString WayID = roads.keys().at(currentroad);
+                    upgradedRoads.append(WayID);
+                    qDebug() << "Upgraded way found";
+                }
+            }else{
+                QStringList allowedTypes;
+                allowedTypes << "track"  << "service"<< "tertiary" << "residential" << "secondary"<< "primary" << "trunk";
+                if (key == "highway")
+                {
+                    QString CurrentType = roads.values().at(currentroad);
+                    QString HistoryType=value;
+                    QString testType;
+                    foreach (testType, allowedTypes)
+                    {
+                        if (testType==CurrentType)
+                            break;
+                        if (testType==HistoryType)
+                        {
+                            QString WayID = roads.keys().at(currentroad);
+                            upgradedRoads.append(WayID);
+                            qDebug() << "Upgraded way found: from" << HistoryType << "to" << CurrentType;
+                        }
+                    }
+
+                }
             }
 
-//            if (key == "highway")
-//            {
-//                isRoad=true;
-//                Type=value;
-//            }
+
 //            else if (key == "name")
 //                Name=value;
 //            else if (key == "ref")

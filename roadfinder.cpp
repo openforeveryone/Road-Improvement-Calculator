@@ -1,10 +1,12 @@
 #include "roadfinder.h"
 #include <QDebug>
 #include <QMap>
+#include <QStringList>
 
-RoadFinder::RoadFinder(QString fileName, QObject *parent) :
+RoadFinder::RoadFinder(QString fileName, bool useTypes, QObject *parent) :
     QObject(parent)
 {
+    this->useTypes=useTypes;
     QFile file(fileName);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
         qDebug() << QString("Cannot read file %1:\n%2.")
@@ -27,6 +29,7 @@ RoadFinder::RoadFinder(QString fileName, QObject *parent) :
         else
             xml.raiseError(QObject::tr("The file is not an OSM file."));
     }
+    output.close();
 }
 
 
@@ -127,12 +130,23 @@ void RoadFinder::readWay()
         int existingCount = roadTypeCounts.value(Type, 0);
         roadTypeCounts.insert(Type, existingCount+1);
         roads++;
-        if (SurfaceType=="asphalt" || SurfaceType=="paved")
+        if (!useTypes && (SurfaceType=="asphalt" || SurfaceType=="paved"))
         {
             pavedroads++;
             QString outputLine = id.append(", ").append(SurfaceType).append("\r\n");
             qDebug() << outputLine;
             output.write(outputLine.toUtf8());
+        }
+        if (useTypes)
+        {
+            QStringList allowedTypes;
+            allowedTypes << "primary"<< "residential" << "road"<<"secondary" << "service"<< "tertiary" << "trunk";
+            if (allowedTypes.contains(Type))
+            {
+                QString outputLine = id.append(", ").append(Type).append("\r\n");
+                qDebug() << outputLine;
+                output.write(outputLine.toUtf8());
+            }
         }
     }
 }
