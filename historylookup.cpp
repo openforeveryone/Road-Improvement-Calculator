@@ -57,7 +57,7 @@ void HistoryLookup::replyFinished(QNetworkReply* reply)
     parse(response);
     currentroad++;
     if (currentroad < roads.keys().count())
-        QTimer::singleShot(500, this, SLOT(makeRequest()));
+        QTimer::singleShot(100, this, SLOT(makeRequest()));
     else
     {
         qDebug() << "Roads Upgraded:";
