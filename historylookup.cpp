@@ -52,27 +52,33 @@ void HistoryLookup::replyFinished(QNetworkReply* reply)
         return;
     }
     QByteArray response = reply->readAll();
-    qDebug() << response;
+//    qDebug() << response;
     parse(response);
     currentroad++;
-//    if (currentroad < roads.keys().count())
-//        QTimer::singleShot(1000, this, SLOT(makeRequest()));
-//    else
-//        qDebug() << "Job Finished";
+    if (currentroad < roads.keys().count())
+        QTimer::singleShot(300, this, SLOT(makeRequest()));
+    else
+        qDebug() << "Job Finished." << roads.keys().count() << "roads inspected" << upgradedRoads.count() << "upgraded roads found.";
 }
 
 
 void HistoryLookup::parse(QByteArray data)
 {
-    qDebug() << "Parsing Data";
+    qDebug() << "Parsing Data" << data;
     QBuffer buffer(&data);
+    buffer.open(QBuffer::ReadOnly);
     xml.setDevice(&buffer);
     if (xml.readNextStartElement()) {
+        qDebug() << "First tag" << xml.name();
         if (xml.name() != "osm")
         {
             xml.raiseError(QObject::tr("The file is not an OSM file."));
             return;
         }
+    }else
+    {
+        qDebug() << "No First tag" << xml.name() << xml.errorString();
+        return;
     }
 
     Q_ASSERT(xml.isStartElement() && xml.name() == "osm");
@@ -91,7 +97,7 @@ void HistoryLookup::parse(QByteArray data)
 
 void HistoryLookup::readWay()
 {
-    qDebug() << "Way found";
+//    qDebug() << "Way found";
     ways++;
 //    if (ways%1000 == 0)
 //        qDebug() << ways << "ways";
@@ -108,6 +114,13 @@ void HistoryLookup::readWay()
         {
             QString key = xml.attributes().value("k").toString();
             QString value = xml.attributes().value("v").toString();
+            if (key == "surface" && value=="unpaved")
+            {
+                QString WayID = roads.keys().at(currentroad);
+                upgradedRoads.append(WayID);
+                qDebug() << "Upgraded way found";
+            }
+
 //            if (key == "highway")
 //            {
 //                isRoad=true;

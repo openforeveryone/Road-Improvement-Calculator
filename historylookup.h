@@ -17,6 +17,7 @@ public:
     void parse(QByteArray data);
     void readWay();
     int ways;
+    QStringList upgradedRoads;
 private:
     QNetworkAccessManager *manager;
     int currentroad;
