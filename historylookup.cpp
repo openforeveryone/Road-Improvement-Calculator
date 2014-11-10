@@ -2,9 +2,10 @@
 #include <QFile>
 #include <QDebug>
 
-HistoryLookup::HistoryLookup(QObject *parent) :
+HistoryLookup::HistoryLookup(bool useTypes, QObject *parent) :
     QObject(parent)
 {
+    this->useTypes=useTypes;
     qDebug() << "HistoryLookup";
     currentroad=0;
     QString fileName = "/home/matt/hackuna/OSM/output";
@@ -52,13 +53,18 @@ void HistoryLookup::replyFinished(QNetworkReply* reply)
         return;
     }
     QByteArray response = reply->readAll();
-    qDebug() << response;
+//    qDebug() << response;
     parse(response);
     currentroad++;
-//    if (currentroad < roads.keys().count())
-//        QTimer::singleShot(1000, this, SLOT(makeRequest()));
-//    else
-//        qDebug() << "Job Finished";
+    if (currentroad < roads.keys().count())
+        QTimer::singleShot(100, this, SLOT(makeRequest()));
+    else
+    {
+        qDebug() << "Roads Upgraded:";
+        qDebug() << upgradedRoads;
+        qDebug() << "Job Finished." << roads.keys().count() << "roads inspected" << upgradedRoads.count() << "upgraded roads found in this region.";
+
+    }
 }
 
 
@@ -66,13 +72,19 @@ void HistoryLookup::parse(QByteArray data)
 {
     qDebug() << "Parsing Data";
     QBuffer buffer(&data);
+    buffer.open(QBuffer::ReadOnly);
     xml.setDevice(&buffer);
     if (xml.readNextStartElement()) {
+        qDebug() << "First tag" << xml.name();
         if (xml.name() != "osm")
         {
             xml.raiseError(QObject::tr("The file is not an OSM file."));
             return;
         }
+    }else
+    {
+        qDebug() << "No First tag" << xml.name() << xml.errorString();
+        return;
     }
 
     Q_ASSERT(xml.isStartElement() && xml.name() == "osm");
@@ -91,7 +103,7 @@ void HistoryLookup::parse(QByteArray data)
 
 void HistoryLookup::readWay()
 {
-    qDebug() << "Way found";
+//    qDebug() << "Way found";
     ways++;
 //    if (ways%1000 == 0)
 //        qDebug() << ways << "ways";
@@ -108,11 +120,38 @@ void HistoryLookup::readWay()
         {
             QString key = xml.attributes().value("k").toString();
             QString value = xml.attributes().value("v").toString();
-//            if (key == "highway")
-//            {
-//                isRoad=true;
-//                Type=value;
-//            }
+            if (!useTypes)
+            {
+                if (key == "surface" && value=="unpaved")
+                {
+                    QString WayID = roads.keys().at(currentroad);
+                    upgradedRoads.append(WayID);
+                    qDebug() << "Upgraded way found";
+                }
+            }else{
+                QStringList allowedTypes;
+                allowedTypes << "track"  << "service"<< "tertiary" << "residential" << "secondary"<< "primary" << "trunk";
+                if (key == "highway")
+                {
+                    QString CurrentType = roads.values().at(currentroad);
+                    QString HistoryType=value;
+                    QString testType;
+                    foreach (testType, allowedTypes)
+                    {
+                        if (testType==CurrentType)
+                            break;
+                        if (testType==HistoryType)
+                        {
+                            QString WayID = roads.keys().at(currentroad);
+                            upgradedRoads.append(WayID);
+                            qDebug() << "Upgraded way found: from" << HistoryType << "to" << CurrentType;
+                        }
+                    }
+
+                }
+            }
+
+
 //            else if (key == "name")
 //                Name=value;
 //            else if (key == "ref")
