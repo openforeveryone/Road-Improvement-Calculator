@@ -11,3 +11,9 @@ Warning
 
 This code is proof of concept; production or even evaulation use may impose
 unacceptable and excessive load on Open Street Map servers.
+
+Building
+--------
+
+    $ qmake
+    $ make
