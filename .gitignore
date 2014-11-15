@@ -1,0 +1,5 @@
+*.o
+processor
+Makefile
+*~
+moc_*.cpp
