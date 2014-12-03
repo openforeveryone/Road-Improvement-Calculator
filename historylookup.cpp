@@ -8,7 +8,7 @@ HistoryLookup::HistoryLookup(bool useTypes, QObject *parent) :
     this->useTypes=useTypes;
     qDebug() << "HistoryLookup";
     currentroad=0;
-    QString fileName = "/home/matt/hackuna/OSM/output";
+    QString fileName = "./output";
     QFile file(fileName);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
         qDebug() << QString("HistoryLookup: Cannot read file %1:\n%2.")

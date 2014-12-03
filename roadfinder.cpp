@@ -14,7 +14,7 @@ RoadFinder::RoadFinder(QString fileName, bool useTypes, QObject *parent) :
                     .arg(file.errorString());
         return;
     }
-    QString outputFilename("/home/matt/hackuna/OSM/output");
+    QString outputFilename("./output");
     output.setFileName(outputFilename);
     if (!output.open(QFile::WriteOnly | QFile::Text)) {
         qDebug() << QString("Cannot read file %1:\n%2.")
